@@ -24,21 +24,43 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: platform-tools
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
+      - name: Extract project
+        run: |
+          mkdir -p extracted
+          unzip -o ashraf_artin_android_updated.zip -d extracted
+
+      - name: Find Android project
+        run: |
+          PROJECT_DIR=$(find extracted -name settings.gradle -printf '%h\n' | head -n 1)
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Project settings.gradle not found"
+            find extracted -maxdepth 5 -type f
+            exit 1
+          fi
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+      - name: Verify Android project
+        run: |
+          test -f "$PROJECT_DIR/app/build.gradle"
+          test -f "$PROJECT_DIR/app/src/main/AndroidManifest.xml"
+
       - name: Build APK
-        working-directory: ashraf_artin_android_updated
-        run: gradle assembleDebug
+        run: gradle -p "$PROJECT_DIR" assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Ashraf-Artin-APK
-          path: ashraf_artin_android_updated/app/build/outputs/apk/debug/app-debug.apk
+          path: extracted/**/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           
