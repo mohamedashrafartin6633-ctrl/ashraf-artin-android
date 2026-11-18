@@ -1,4 +1,5 @@
-name: Build Ashraf Artin APK
+
+name: Build Ashraf Artin Native APK
 
 on:
   push:
@@ -33,45 +34,24 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Extract Android project
+      - name: Extract Native Project
         run: |
-          mkdir -p extracted
-          unzip -o ashraf_artin_android_updated.zip -d extracted
+          mkdir -p native_project
+          unzip -o ashraf_artin_native_android_project.zip -d native_project
 
-      - name: Find Android project
+      - name: Verify Project
         run: |
-          PROJECT_DIR=$(find extracted -type f -name settings.gradle -printf '%h\n' | head -n 1)
+          test -f native_project/settings.gradle
+          test -f native_project/app/build.gradle
+          test -f native_project/app/src/main/AndroidManifest.xml
 
-          if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: settings.gradle not found"
-            find extracted -maxdepth 5 -type f
-            exit 1
-          fi
+      - name: Build Native APK
+        run: gradle -p native_project assembleDebug
 
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Android project found at: $PROJECT_DIR"
-
-      - name: Verify project structure
-        run: |
-          test -f "$PROJECT_DIR/settings.gradle"
-          test -f "$PROJECT_DIR/build.gradle"
-          test -f "$PROJECT_DIR/app/build.gradle"
-          test -f "$PROJECT_DIR/app/src/main/AndroidManifest.xml"
-          test -f "$PROJECT_DIR/app/src/main/java/com/ashrafartin/workshop/MainActivity.java"
-
-      - name: Build APK
-        run: |
-          gradle -p "$PROJECT_DIR" assembleDebug
-
-      - name: Verify APK
-        run: |
-          test -f "$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
-          ls -lh "$PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
-
-      - name: Upload APK
+      - name: Upload Native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ashraf-Artin-APK
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          name: Ashraf-Artin-Native-APK
+          path: native_project/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           
