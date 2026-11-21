@@ -1,18 +1,22 @@
+
 name: Build Ashraf Artin Native APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -31,34 +35,46 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Extract Native Android project
+      - name: Extract New Native Android Project
         run: |
-          test -f ashraf_artin_native_login_fix.zip
+          test -f "ashraf_artin_dashboard_update (1).zip"
           mkdir -p native_project
-          unzip -o ashraf_artin_native_login_fix.zip -d native_project
+          unzip -o "ashraf_artin_dashboard_update (1).zip" -d native_project
+
+      - name: Verify Android Project
+        run: |
           test -f native_project/settings.gradle
+          test -f native_project/build.gradle
           test -f native_project/app/build.gradle
+          test -f native_project/app/src/main/AndroidManifest.xml
           test -f native_project/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
 
-      - name: Configure Supabase from repository secrets
+      - name: Configure Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           test -n "$SUPABASE_URL"
           test -n "$SUPABASE_PUBLISHABLE_KEY"
+
           {
             printf 'SUPABASE_URL=%s\n' "$SUPABASE_URL"
             printf 'SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY"
           } > native_project/local.properties
 
       - name: Build Native APK
-        run: gradle -p native_project assembleDebug
+        run: |
+          gradle -p native_project assembleDebug
 
-      - name: Upload Native APK
+      - name: Verify APK
+        run: |
+          test -f native_project/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Ashraf-Artin-Native-APK
           path: native_project/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 14
           
