@@ -45,6 +45,12 @@ jobs:
           test -f native_project/app/build.gradle
           test -f native_project/app/src/main/AndroidManifest.xml
 
+      - name: Create Supabase Configuration
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          printf 'SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY" > native_project/local.properties
+
       - name: Build Native APK
         run: gradle -p native_project assembleDebug
 
