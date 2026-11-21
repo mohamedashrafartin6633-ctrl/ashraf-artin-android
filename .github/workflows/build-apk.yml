@@ -33,9 +33,9 @@ jobs:
 
       - name: Extract Native Android project
         run: |
-          test -f ashraf_artin_native_project_stage2.zip
+          test -f ashraf_artin_native_login_fix.zip
           mkdir -p native_project
-          unzip -o ashraf_artin_native_project_stage2.zip -d native_project
+          unzip -o ashraf_artin_native_login_fix.zip -d native_project
           test -f native_project/settings.gradle
           test -f native_project/app/build.gradle
           test -f native_project/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
