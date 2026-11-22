@@ -1,4 +1,3 @@
-
 name: Build Ashraf Artin Native APK
 
 on:
@@ -37,16 +36,16 @@ jobs:
 
       - name: Extract New Native Android Project
         run: |
-          test -f "ashraf_artin_dashboard_update.zip"
+          test -f "ashraf_artin_supabase_configured.zip"
           mkdir -p native_project
-          unzip -o "ashraf_artin_dashboard_update.zip" -d native_project
+          unzip -o "ashraf_artin_supabase_configured.zip" -d native_project
 
       - name: Verify Android Project
         run: |
-          test -f native_project/settings.gradle
-          test -f native_project/app/build.gradle
-          test -f native_project/app/src/main/AndroidManifest.xml
-          test -f native_project/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
+          test -f native_project/aa_work/settings.gradle
+          test -f native_project/aa_work/app/build.gradle
+          test -f native_project/aa_work/app/src/main/AndroidManifest.xml
+          test -f native_project/aa_work/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
 
       - name: Configure Supabase
         env:
@@ -58,20 +57,20 @@ jobs:
           {
             printf 'SUPABASE_URL=%s\n' "$SUPABASE_URL"
             printf 'SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY"
-          } > native_project/local.properties
+          } > native_project/aa_work/local.properties
 
       - name: Build Native APK
-        run: gradle -p native_project assembleDebug
+        run: gradle -p native_project/aa_work assembleDebug
 
       - name: Verify APK
         run: |
-          test -f native_project/app/build/outputs/apk/debug/app-debug.apk
+          test -f native_project/aa_work/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Ashraf-Artin-Native-APK
-          path: native_project/app/build/outputs/apk/debug/app-debug.apk
+          path: native_project/aa_work/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
           
