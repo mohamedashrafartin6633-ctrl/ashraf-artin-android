@@ -1,4 +1,5 @@
-name: Build Ashraf Artin V6 Signed Release APK
+
+name: Build Ashraf Artin V7 Signed Release APK
 
 on:
   workflow_dispatch:
@@ -14,7 +15,7 @@ env:
 
 jobs:
   build:
-    name: Build V6 Signed Android Release
+    name: Build V7 Signed Android Release
     runs-on: ubuntu-latest
 
     steps:
@@ -40,19 +41,13 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Extract V6 Release Project
+      - name: Verify V7 Android Project
         run: |
-          test -f Ashraf-Artin-V6-Source.zip
-          mkdir -p native_project
-          unzip -o Ashraf-Artin-V6-Source.zip -d native_project
-
-      - name: Verify Android Project
-        run: |
-          test -f native_project/settings.gradle
-          test -f native_project/build.gradle
-          test -f native_project/app/build.gradle
-          test -f native_project/app/src/main/AndroidManifest.xml
-          test -f native_project/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
+          test -f settings.gradle
+          test -f build.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+          test -f app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
 
       - name: Restore Release Signing Key
         env:
@@ -77,23 +72,22 @@ jobs:
           {
             printf 'SUPABASE_URL=%s\n' "$SUPABASE_URL"
             printf 'SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY"
-          } > native_project/local.properties
+          } > local.properties
 
       - name: Build Signed Release APK
-        run: |
-          gradle -p native_project assembleRelease
+        run: gradle assembleRelease
 
-      - name: Verify APK
+      - name: Verify APK Signature
         run: |
-          APK="native_project/app/build/outputs/apk/release/app-release.apk"
+          APK="app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
 
       - name: Upload Signed Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ashraf-Artin-V6-Signed-Release-APK
-          path: native_project/app/build/outputs/apk/release/app-release.apk
+          name: Ashraf-Artin-V7-Signed-Release-APK
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
