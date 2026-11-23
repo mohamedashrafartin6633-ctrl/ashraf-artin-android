@@ -1,15 +1,21 @@
 
-name: Build Ashraf Artin Native APK
+name: Build Ashraf Artin Signed Release APK
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/release-keystore.jks
+  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Signed Android Release
     runs-on: ubuntu-latest
 
     steps:
@@ -35,11 +41,11 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Extract New Native Android Project
+      - name: Extract V5 Release Project
         run: |
-          test -f "ashraf_artin_supabase_configured.zip"
+          test -f ashraf_artin_v5_release_workflow.zip
           mkdir -p native_project
-          unzip -o "ashraf_artin_supabase_configured.zip" -d native_project
+          unzip -o ashraf_artin_v5_release_workflow.zip -d native_project
 
       - name: Verify Android Project
         run: |
@@ -48,6 +54,18 @@ jobs:
           test -f native_project/aa_work/app/src/main/AndroidManifest.xml
           test -f native_project/aa_work/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
 
+      - name: Restore Release Signing Key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          test -s "$ANDROID_KEYSTORE_PATH"
+
       - name: Configure Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -55,23 +73,31 @@ jobs:
         run: |
           test -n "$SUPABASE_URL"
           test -n "$SUPABASE_PUBLISHABLE_KEY"
+
           {
             printf 'SUPABASE_URL=%s\n' "$SUPABASE_URL"
             printf 'SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY"
           } > native_project/aa_work/local.properties
 
-      - name: Build Native APK
-        run: gradle -p native_project/aa_work assembleDebug
+      - name: Build Signed Release APK
+        run: |
+          gradle -p native_project/aa_work assembleRelease
 
       - name: Verify APK
         run: |
-          test -f native_project/aa_work/app/build/outputs/apk/debug/app-debug.apk
+          APK="native_project/aa_work/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
 
-      - name: Upload APK
+      - name: Upload Signed Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Ashraf-Artin-Native-APK
-          path: native_project/aa_work/app/build/outputs/apk/debug/app-debug.apk
+          name: Ashraf-Artin-Signed-Release-APK
+          path: native_project/aa_work/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
-          retention-days: 14
-          
+          retention-days: 30
+
+      - name: Remove Temporary Signing Key
+        if: always()
+        run: rm -f "$ANDROID_KEYSTORE_PATH"
+        
