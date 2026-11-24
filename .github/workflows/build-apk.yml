@@ -41,13 +41,19 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Extract V7 Source
+        run: |
+          test -f Ashraf-Artin-V7-Invoice-Warranty-Updated.zip
+          mkdir -p native_project
+          unzip -o Ashraf-Artin-V7-Invoice-Warranty-Updated.zip -d native_project
+
       - name: Verify V7 Android Project
         run: |
-          test -f settings.gradle
-          test -f build.gradle
-          test -f app/build.gradle
-          test -f app/src/main/AndroidManifest.xml
-          test -f app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
+          test -f native_project/settings.gradle
+          test -f native_project/build.gradle
+          test -f native_project/app/build.gradle
+          test -f native_project/app/src/main/AndroidManifest.xml
+          test -f native_project/app/src/main/java/com/ashrafartin/nativeapp/MainActivity.kt
 
       - name: Restore Release Signing Key
         env:
@@ -57,7 +63,6 @@ jobs:
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
-
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           test -s "$ANDROID_KEYSTORE_PATH"
 
@@ -68,18 +73,17 @@ jobs:
         run: |
           test -n "$SUPABASE_URL"
           test -n "$SUPABASE_PUBLISHABLE_KEY"
-
           {
             printf 'SUPABASE_URL=%s\n' "$SUPABASE_URL"
             printf 'SUPABASE_PUBLISHABLE_KEY=%s\n' "$SUPABASE_PUBLISHABLE_KEY"
-          } > local.properties
+          } > native_project/local.properties
 
       - name: Build Signed Release APK
-        run: gradle assembleRelease
+        run: gradle -p native_project assembleRelease
 
       - name: Verify APK Signature
         run: |
-          APK="app/build/outputs/apk/release/app-release.apk"
+          APK="native_project/app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
 
@@ -87,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Ashraf-Artin-V7-Signed-Release-APK
-          path: app/build/outputs/apk/release/app-release.apk
+          path: native_project/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
